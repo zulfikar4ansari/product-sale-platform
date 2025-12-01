@@ -1,0 +1,70 @@
+# ------------------------------
+# IntelliJ IDEA
+# ------------------------------
+.idea/
+*.iml
+*.iws
+out/
+
+# ------------------------------
+# Maven
+# ------------------------------
+target/
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
+
+# ------------------------------
+# Logs and temp files
+# ------------------------------
+*.log
+logs/
+*.tmp
+*.temp
+
+# ------------------------------
+# OS files
+# ------------------------------
+# macOS
+.DS_Store
+# Windows
+Thumbs.db
+
+# ------------------------------
+# Java
+# ------------------------------
+*.class
+*.jar
+*.war
+*.ear
+
+# ------------------------------
+# Spring Boot / Environment
+# ------------------------------
+application-*.yml
+application-*.yaml
+application-*.properties
+*.env
+.env
+
+# Keep default application.properties
+!src/main/resources/application.properties
+
+# ------------------------------
+# Node / Frontend (if exists)
+# ------------------------------
+node_modules/
+dist/
+
+# ------------------------------
+# Security / Keys
+# ------------------------------
+*.jks
+*.keystore
+*.pem
+*.key
+*.crt
+
+# ------------------------------
+# Upload directories (if any service stores files)
+# ------------------------------
+uploads/
