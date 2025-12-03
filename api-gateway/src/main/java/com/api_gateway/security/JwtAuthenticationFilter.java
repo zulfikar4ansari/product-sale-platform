@@ -1,6 +1,5 @@
 package com.api_gateway.security;
 
-import com.api_gateway.security.JwtUtil;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,10 +9,10 @@ import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import com.api_gateway.security.JwtUtil;
 
 @Slf4j
 @Component
@@ -27,16 +26,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         String path = exchange.getRequest().getURI().getPath();
 
-        log.info(">>> Incoming request path: " + path);
-        // 1) Skip JWT check for auth endpoints (login/register)
         if (path.startsWith("/api/auth")) {
             return chain.filter(exchange);
         }
 
-        // 2) Check Authorization header
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return this.unauthorized(exchange);
+            return unauthorized(exchange);
         }
 
         String token = authHeader.substring(7);
@@ -47,20 +44,31 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             String username = claims.getSubject();
             String role = (String) claims.get("role");
 
-            log.debug("Authenticated user: {}, role: {}", username, role);
+            log.info("User: {} | Role: {}", username, role);
 
-            // Add headers for downstream services
-            ServerHttpRequest mutatedRequest = exchange.getRequest()
-                    .mutate()
-                    .header("X-Auth-Username", username)
-                    .header("X-Auth-Role", role != null ? role : "")
-                    .build();
+            // ----------------------------------------------------------------
+            // CRITICAL FIX for Spring Cloud Gateway 4.x:
+            // Create a NEW HttpHeaders instance (MUTABLE)
+            // ----------------------------------------------------------------
+            HttpHeaders mutableHeaders = new HttpHeaders();
+            mutableHeaders.addAll(exchange.getRequest().getHeaders()); // copy original
+            mutableHeaders.add("X-Auth-Username", username);
+            mutableHeaders.add("X-Auth-Role", role != null ? role : "");
 
-            return chain.filter(exchange.mutate().request(mutatedRequest).build());
+            // Rebuild NEW request (no mutation on original request)
+            ServerHttpRequest newRequest = new ServerHttpRequestDecorator(exchange.getRequest()) {
+                @Override
+                public HttpHeaders getHeaders() {
+                    return mutableHeaders; // return fully mutable headers
+                }
+            };
+            // ----------------------------------------------------------------
+
+            return chain.filter(exchange.mutate().request(newRequest).build());
 
         } catch (Exception ex) {
             log.error("JWT validation failed", ex);
-            return this.unauthorized(exchange);
+            return unauthorized(exchange);
         }
     }
 
@@ -71,6 +79,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -1; // run early
+        return -1;
     }
 }
+

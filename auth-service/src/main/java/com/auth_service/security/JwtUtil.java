@@ -28,11 +28,11 @@ public class JwtUtil {
         Date expiry = new Date(now.getTime() + expirationMs);
 
         return Jwts.builder()
-                .setSubject(username)
-                .addClaims(Map.of("role", role))
-                .setIssuedAt(now)
-                .setExpiration(expiry)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .subject(username)
+                .claim("role", role)
+                .issuedAt(now)
+                .expiration(expiry)
+                .signWith(getSigningKey())
                 .compact();
     }
 }

@@ -12,11 +12,18 @@ spring:
           uri: http://localhost:8081
           predicates:
             - Path=/api/auth/**
+              # It compares the URL path /api/auth/login with the route predicate:
+              # Path=/api/auth/**  : MATCH FOUND → So this request belongs to auth-service route.
+              # Gateway Forwards the Request : http://localhost:8081
+              # Gateway rewrites internally:  http://localhost:8081/api/auth/login
+              # And sends the request to auth-service.
 
         - id: product-service
           uri: http://localhost:8082
           predicates:
             - Path=/api/products/**
+          filters:
+                - StripPrefix=1
 
         - id: inventory-service
           uri: http://localhost:8083
